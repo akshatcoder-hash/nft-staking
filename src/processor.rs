@@ -1,4 +1,5 @@
-use solana_program::{     account_info::{ AccountInfo, next_account_info },
+use solana_program::{     
+    account_info::{ AccountInfo, next_account_info },
     entrypoint::ProgramResult,
     pubkey::Pubkey,
     msg,
@@ -19,8 +20,6 @@ let (stake_state_pda, bump_seed) = Pubkey::find_program_address(         &[user.
         program_id
     );
 
-// Check to ensure that you're using the right PDA if stake_state_pda != *stake_state.key { msg!("Invalid seeds for PDA"); return Err(StakeError::InvalidPda.into());     }
-
 let rent = Rent::get()?; let rent_lamports = rent.minimum_balance(UserStakeInfo::SIZE);
 msg!("Creating state account at {:?}", stake_state_pda);     invoke_signed(
         &system_instruction::create_account(
@@ -38,8 +37,10 @@ msg!("Creating state account at {:?}", stake_state_pda);     invoke_signed(
         ]],
     )?;
 
-// Let's create account let mut account_data = try_from_slice_unchecked::<UserStakeInfo>(&stake_state.data.borrow()).unwrap()
-if account_data.is_initialized() { msg!("Account already initialized"); return Err(ProgramError::AccountAlreadyInitialized);     }
+let mut account_data = try_from_slice_unchecked::<UserStakeInfo>(&stake_state.data.borrow()).unwrap()
+if account_data.is_initialized() { msg!("Account already initialized");
+    return Err(ProgramError::AccountAlreadyInitialized);    
+ }
 
     account_data.token_account = *nft_token_account.key;
     account_data.user_pubkey = *user.key;
