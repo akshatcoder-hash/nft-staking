@@ -48,3 +48,27 @@ if account_data.is_initialized() { msg!("Account already initialized");
 account_data.is_initialized = true;
 account_data.serialize(&mut &mut stake_state.data.borrow_mut()[..])?;
 Ok(()) }
+
+fn process_stake(     
+    program_id: &Pubkey,
+    accounts: &[AccountInfo]
+) -> ProgramResult {
+let account_info_iter = &mut accounts.iter(); let user = next_account_info(account_info_iter)?; let nft_token_account = next_account_info(account_info_iter)?; let stake_state = next_account_info(account_info_iter)?; 
+let (stake_state_pda, _bump_seed) = Pubkey::find_program_address(         &[user.key.as_ref(), nft_token_account.key.as_ref()],
+        program_id,
+    );
+
+if stake_state_pda != *stake_state.key { msg!("Invalid seeds for PDA"); return Err(StakeError::InvalidPda.into());     }
+
+// Let's create account let mut account_data = try_from_slice_unchecked::<UserStakeInfo>(&stake_state.data.borrow()).unwrap() 
+if !account_data.is_initialized() { msg!("Account not initialized"); return Err(ProgramError::UninitializedAccount.into());     }
+
+let clock = Clock::get()?; 
+    account_data.token_account = *nft_token_account.key;
+    account_data.user_pubkey = *user.key;
+    account_data.stake_state = StakeState::Unstaked;
+    account_data.stake_start_time = clock.unix_timestamp;
+    account_data.last_stake_redeem = clock.unix_timestamp;
+account_data.is_initialized = true; 
+account_data.serialize(&mut &mut stake_state.data.borrow_mut()[..])?; 
+Ok(()) }
